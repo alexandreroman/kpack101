@@ -1,0 +1,6 @@
+apiVersion: build.pivotal.io/v1alpha1
+kind: Builder
+metadata:
+  name: cnb-builder
+spec:
+  image: cloudfoundry/cnb:cflinuxfs3

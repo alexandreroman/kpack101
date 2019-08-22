@@ -1,0 +1,17 @@
+apiVersion: build.pivotal.io/v1alpha1
+kind: Image
+metadata:
+  name: spring-on-k8s-image
+spec:
+  tag: alexandreroman/spring-on-k8s # Set your Docker image
+  serviceAccount: kpack-service-account
+  builderRef: cnb-builder
+  cacheSize: "2Gi"
+  source:
+    git:
+      url: https://github.com/alexandreroman/spring-on-k8s.git # Use your Git repo URL
+      revision: master
+  build:
+    env:
+      - name: BP_JAVA_VERSION
+        value: 8.* # Java 11 is used by default
