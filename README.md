@@ -1,22 +1,26 @@
-# KPack 101
+# kpack 101
 
-This project shows how to use [KPack](https://github.com/pivotal/kpack),
+This project shows how to use [kpack](https://github.com/pivotal/kpack),
 an open-source project by [Pivotal](https://pivotal.io), to leverage
-[Cloud Native Buildpacks](https://buildpacks.io) on any Kubernetes cluster.
+[Cloud Native Buildpacks](https://buildpacks.io) on any Kubernetes clusters.
 
-Using KPack, you can automatically build secure Docker images from your source code,
-without having to write a `Dockerfile`. Moreover, KPack can rebase your Docker images
-when updates are available.
+Using kpack, you can automatically build secure Docker images from your source code,
+without having to write a `Dockerfile`. Moreover, kpack can rebase your Docker images
+when updates are available. Let's say you're deploying a Java app as a container image,
+embedding a JRE: when a new JRE version is out, kpack can update your image without
+having you building a new container image.
 
-This repository describes how to deploy KPack to your Kubernetes cluster, and how to use
+[Read more about kpack in the announcement article](https://content.pivotal.io/blog/introducing-kpack-a-kubernetes-native-container-build-service).
+
+This repository describes how to deploy kpack to your Kubernetes cluster, and how to use
 it to create your first Docker image.
 
-## Deploying KPack
+## Deploying kpack
 
-Download the [latest KPack release](https://github.com/pivotal/kpack/releases):
+Download the [latest kpack release](https://github.com/pivotal/kpack/releases):
 you should have a file `release.yaml`.
 
-Deploy KPack using `kubectl`:
+Deploy kpack using `kubectl`:
 ```bash
 $ kubectl apply -f release.yaml
 namespace/kpack configured
@@ -30,14 +34,14 @@ serviceaccount/controller created
 customresourcedefinition.apiextensions.k8s.io/sourceresolvers.build.pivotal.io created
 ```
 
-Check that KPack is running:
+Check that kpack is running:
 ```bash
 $ kubectl -n kpack get pods
 NAME                               READY   STATUS    RESTARTS   AGE
 kpack-controller-dd4bb9c58-rj2m9   1/1     Running   0          11m
 ```
 
-## Creating a Docker image from a Git repository using KPack
+## Creating a Docker image from a Git repository using kpack
 
 Create a secret for push access to your Docker registry. Let's create file
 `dockerhub-creds.yml` with your [Docker Hub](https://hub.docker.com) credentials:
@@ -85,7 +89,7 @@ secrets:
 ```
 
 We'll build Docker images using a Cloud Foundry buildpack
-(don't worry: you can deploy the resulting Docker image anywhere):
+(don't worry: you can deploy the resulting Docker image anywhere 😋):
 ```yaml
 apiVersion: build.pivotal.io/v1alpha1
 kind: Builder
@@ -103,18 +107,21 @@ kind: Image
 metadata:
   name: spring-on-k8s-image
 spec:
-  tag: alexandreroman/spring-on-k8s # Set your Docker image
+  # Set your Docker image.
+  tag: alexandreroman/spring-on-k8s
   serviceAccount: kpack-service-account
   builderRef: cnb-builder
   cacheSize: "2Gi"
   source:
     git:
-      url: https://github.com/alexandreroman/spring-on-k8s.git # Use your Git repo URL
+      # Set your Git repo URL.
+      url: https://github.com/alexandreroman/spring-on-k8s.git
       revision: master
   build:
     env:
       - name: BP_JAVA_VERSION
-        value: 8.* # Java 11 is used by default
+        # Java 11 is used by default if BP_JAVA_VERSION is unset.
+        value: 8.*
 ```
 
 Deploy all files to your Kubernetes cluster:
@@ -126,9 +133,9 @@ $ kubectl apply -f kpack-service-account.yml
 $ kubectl apply -f app-source.yml
 ```
 
-## Using KPack
+## Using kpack
 
-Monitor KPack build status:
+Monitor kpack build status:
 ```bash
 $ kubectl get cnbbuilds
 NAME                                IMAGE   SUCCEEDED
@@ -139,7 +146,7 @@ Status is `Unknown` while image is being built.
 
 Wait a couple of minutes, and the status will be updated:
 ```bash
-kubectl get cnbbuilds                                    
+$ kubectl get cnbbuilds                                    
 NAME                                IMAGE                                                                                                                  SUCCEEDED
 spring-on-k8s-image-build-1-kfgz8   index.docker.io/alexandreroman/spring-on-k8s@sha256:6188498e07a6c4e6620fd33bf7c2842f76618ae6f05f07e4146f7cf1f8cfd624   True
 ```
@@ -168,9 +175,10 @@ $ docker run --rm -p 8080:8080/tcp \
 2019-08-22 16:49:34.683  INFO 1 --- [           main] i.pivotal.demos.springonk8s.Application  : Started Application in 6.237 seconds (JVM running for 7.322)
 ```
 
-Now, update your Git repository, and monitor KPack activity:
+Now, update your Git repository, and monitor kpack activity:
 ```bash
-kubectl get cnbbuildsNAME                                IMAGE                                                                                                                  SUCCEEDED
+$ kubectl get cnbbuilds
+NAME                                IMAGE                                                                                                                  SUCCEEDED
 spring-on-k8s-image-build-1-kfgz8   index.docker.io/alexandreroman/spring-on-k8s@sha256:6188498e07a6c4e6620fd33bf7c2842f76618ae6f05f07e4146f7cf1f8cfd624   True
 spring-on-k8s-image-build-2-cbd5f                                                                                                                          Unknown
 ```
@@ -179,7 +187,7 @@ A new image is being built!
 
 Run this command again, and you should have a new image:
 ```bash
-kubectl get cnbbuilds      
+$ kubectl get cnbbuilds      
 NAME                                IMAGE                                                                                                                  SUCCEEDED
 spring-on-k8s-image-build-1-kfgz8   index.docker.io/alexandreroman/spring-on-k8s@sha256:6188498e07a6c4e6620fd33bf7c2842f76618ae6f05f07e4146f7cf1f8cfd624   True
 spring-on-k8s-image-build-2-cbd5f   index.docker.io/alexandreroman/spring-on-k8s@sha256:9ed04eb2e25f7056ae268c8441032e16feaa82de8195ebb489142d02c381fb3d   True
