@@ -110,7 +110,9 @@ spec:
   # Set your Docker image.
   tag: alexandreroman/spring-on-k8s
   serviceAccount: kpack-service-account
-  builderRef: cnb-builder
+  builder:
+    name: cnb-builder
+    kind: Builder
   cacheSize: "2Gi"
   source:
     git:
