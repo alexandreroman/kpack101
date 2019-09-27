@@ -5,7 +5,6 @@ metadata:
 spec:
   tag: alexandreroman/spring-on-k8s # Set your Docker image
   serviceAccount: kpack-service-account
-  builderRef: cnb-builder
   builder:
     name: cnb-builder
     kind: Builder
