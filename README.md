@@ -18,27 +18,55 @@ it to create your first Docker image.
 ## Deploying kpack
 
 Download the [latest kpack release](https://github.com/pivotal/kpack/releases):
-you should have a file `release.yaml`.
+you should have a file `release-<version>.yaml`.
 
 Deploy kpack using `kubectl`:
 ```bash
-$ kubectl apply -f release.yaml
-namespace/kpack configured
-customresourcedefinition.apiextensions.k8s.io/builds.build.pivotal.io created
-customresourcedefinition.apiextensions.k8s.io/builders.build.pivotal.io created
-clusterrole.rbac.authorization.k8s.io/kpack-admin created
-clusterrolebinding.rbac.authorization.k8s.io/kpack-controller-admin created
+$ kubectl apply -f release-<version>.yaml
+namespace/kpack created
+customresourcedefinition.apiextensions.k8s.io/builds.build.pivotal.io unchanged
+customresourcedefinition.apiextensions.k8s.io/builders.build.pivotal.io unchanged
+customresourcedefinition.apiextensions.k8s.io/clusterbuilders.build.pivotal.io unchanged
+clusterrole.rbac.authorization.k8s.io/kpack-controller-admin configured
+clusterrole.rbac.authorization.k8s.io/kpack-webhook-admin configured
+clusterrolebinding.rbac.authorization.k8s.io/kpack-controller-admin unchanged
+clusterrolebinding.rbac.authorization.k8s.io/kpack-webhook-admin unchanged
 deployment.apps/kpack-controller created
-customresourcedefinition.apiextensions.k8s.io/images.build.pivotal.io created
+customresourcedefinition.apiextensions.k8s.io/custombuilders.experimental.kpack.pivotal.io created
+customresourcedefinition.apiextensions.k8s.io/customclusterbuilders.experimental.kpack.pivotal.io created
+customresourcedefinition.apiextensions.k8s.io/images.build.pivotal.io unchanged
+service/kpack-webhook created
 serviceaccount/controller created
-customresourcedefinition.apiextensions.k8s.io/sourceresolvers.build.pivotal.io created
+serviceaccount/webhook created
+customresourcedefinition.apiextensions.k8s.io/sourceresolvers.build.pivotal.io unchanged
+customresourcedefinition.apiextensions.k8s.io/stacks.experimental.kpack.pivotal.io created
+customresourcedefinition.apiextensions.k8s.io/stores.experimental.kpack.pivotal.io created
+mutatingwebhookconfiguration.admissionregistration.k8s.io/resource.webhook.kpack.pivotal.io created
+deployment.apps/kpack-webhook created
 ```
 
 Check that kpack is running:
 ```bash
 $ kubectl -n kpack get pods
-NAME                               READY   STATUS    RESTARTS   AGE
-kpack-controller-dd4bb9c58-rj2m9   1/1     Running   0          11m
+NAME                                READY   STATUS    RESTARTS   AGE
+kpack-controller-5f66c774d8-cschb   1/1     Running   0          13s
+kpack-webhook-847c887dd-4nncg       1/1     Running   0          13s
+```
+
+We'll build Docker images using a Cloud Foundry buildpack
+(don't worry: you can deploy the resulting Docker image anywhere 😋).
+```yaml
+apiVersion: build.pivotal.io/v1alpha1
+kind: ClusterBuilder
+metadata:
+  name: default
+spec:
+  image: cloudfoundry/cnb:bionic
+```
+
+Deploy this builder to your cluster:
+```bash
+$ kubectl apply -f cnb-builder.yml
 ```
 
 ## Creating a Docker image from a Git repository using kpack
@@ -88,17 +116,6 @@ secrets:
   - name: github-creds
 ```
 
-We'll build Docker images using a Cloud Foundry buildpack
-(don't worry: you can deploy the resulting Docker image anywhere 😋):
-```yaml
-apiVersion: build.pivotal.io/v1alpha1
-kind: Builder
-metadata:
-  name: cnb-builder
-spec:
-  image: cloudfoundry/cnb:cflinuxfs3
-```
-
 Finally, create a configuration file for building a Docker image from your
 Git repository:
 ```yaml
@@ -111,8 +128,8 @@ spec:
   tag: alexandreroman/spring-on-k8s
   serviceAccount: kpack-service-account
   builder:
-    name: cnb-builder
-    kind: Builder
+    name: default
+    kind: ClusterBuilder
   cacheSize: "2Gi"
   source:
     git:
@@ -123,14 +140,13 @@ spec:
     env:
       - name: BP_JAVA_VERSION
         # Java 11 is used by default if BP_JAVA_VERSION is unset.
-        value: 8.*
+        value: 11.*
 ```
 
 Deploy all files to your Kubernetes cluster:
 ```bash
 $ kubectl apply -f dockerhub-creds.yml
 $ kubectl apply -f github-creds.yml
-$ kubectl apply -f cnb-builder.yml
 $ kubectl apply -f kpack-service-account.yml
 $ kubectl apply -f app-source.yml
 ```
@@ -203,6 +219,6 @@ Feel free to open issues & send PR.
 
 ## License
 
-Copyright &copy; 2019 [Pivotal Software, Inc](https://pivotal.io).
+Copyright &copy; 2020 [VMware, Inc](https://vmware.com).
 
 This project is licensed under the [Apache Software License version 2.0](https://www.apache.org/licenses/LICENSE-2.0).

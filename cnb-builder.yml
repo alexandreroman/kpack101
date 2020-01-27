@@ -1,6 +1,7 @@
 apiVersion: build.pivotal.io/v1alpha1
-kind: Builder
+kind: ClusterBuilder
 metadata:
-  name: cnb-builder
+  name: default
 spec:
-  image: cloudfoundry/cnb:cflinuxfs3
+  image: cloudfoundry/cnb:bionic
+  
